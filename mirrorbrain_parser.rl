@@ -54,12 +54,13 @@ $DEBUG=false
   size = digit+                                                      >mark %setSize;
   referer = [^"]+                                                    >mark %setReferer;
   useragent = [^"]+                                                  >mark %setAgent;
-  request_type = ( 'file' | 'torrent' | 'redirect' )                 >mark %setRequestType;
-  give = ( 'file' | 'torrent' | 'redirect' )                         >mark %setGivenType;
-  region = 'r:' alnum+                                               >mark %setRegion;
-  mirror = alnum+                                                    >mark %setMirror;
-  country = alnum+ ":" alnum+                                        >mark %setCountry;
-  asn = 'ASN:' alnum+                                                >mark %setASN;
+  request_type = ( 'file' | 'torrent' | 'redirect' | '-' )           >mark %setRequestType;
+  give = ( 'file' | 'torrent' | 'redirect' | '-' )                   >mark %setGivenType;
+  optional = ( alnum+ | '-' );
+  region = 'r:' optional                                             >mark %setRegion;
+  mirror = optional                                                  >mark %setMirror;
+  country = optional ":" optional                                    >mark %setCountry;
+  asn = 'ASN:' optional                                              >mark %setASN;
   ip = [0-9\.]+                                                      >mark %setIP;
   net = 'P:' ip                                                      >mark %setNet; 
   redir_size = 'size:' digit+                                        >mark %setRedirSize;
@@ -97,5 +98,5 @@ end
 
 tokenizer = Mirrorbrain::Tokenizer.new
 while gets do
-  puts tokenizer.run($_).to_yaml
+  puts tokenizer.run($_)
 end
