@@ -21,7 +21,9 @@ $DEBUG=false
 
   action setDate { @result.date = data[marker..p-1] }
   action setIP { @result.ip = data[marker..p-1] }
-  action setRequest { @result.request = data[marker..p-1] }
+  action setRequestMethod { @result.request_method = data[marker..p-1] }
+  action setRequestPath { @result.request_path = data[marker..p-1] }
+  action setRequestProto { @result.request_proto = data[marker..p-1] }
   action setReturn { @result.return_code = data[marker..p-1] }
   action setSize { @result.size = data[marker..p-1] }
   action setReferer { @result.referer = data[marker..p-1] }
@@ -45,7 +47,9 @@ $DEBUG=false
   ws0 = ' '{0,};
   eol = /[\r\n]/ | '\r\n';
   date = [^\]]+                                                      >mark %setDate;
-  request = [^"]+                                                    >mark %setRequest;
+  request_method = ( 'GET' | 'POST' | 'HEAD' )                       >mark %setRequestMethod;
+  request_path = [^ ]+                                               >mark %setRequestPath;
+  request_proto = ( 'HTTP/1.0' | 'HTTP/1.1' )                        >mark %setRequestProto;
   return = digit+                                                    >mark %setReturn;
   size = digit+                                                      >mark %setSize;
   referer = [^"]+                                                    >mark %setReferer;
@@ -61,7 +65,8 @@ $DEBUG=false
   redir_size = 'size:' digit+                                        >mark %setRedirSize;
   redir_bytes = 'bytes:' digit+ '-'?                                 >mark %setRedirBytes;
 
-  log_line = ip ws '-' ws '-' ws '[' date ']' ws '"' request '"' ws 
+  log_line = ip ws '-' ws '-' ws '[' date ']' ws '"' request_method ws
+             request_path ws request_proto '"' ws 
              return ws size ws '"' referer '"' ws '"' useragent '"' 
              ws ws0 'want:' request_type ws 'give:' give ws region ws
              mirror ws ws0 country ws asn ws net ws ws0 redir_size ws
