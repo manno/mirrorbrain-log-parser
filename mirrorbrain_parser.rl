@@ -39,8 +39,7 @@ $DEBUG=false
   action setRedirBytes { @result.redir_bytes = data[marker..p-1] }
 
   action LogLineFinished {
-    @result.date = date
-    @result.request = request
+    @result.parsed = true
   }
 
   ws = ' ';
@@ -57,20 +56,23 @@ $DEBUG=false
   request_type = ( 'file' | 'torrent' | 'redirect' | '-' )           >mark %setRequestType;
   give = ( 'file' | 'torrent' | 'redirect' | '-' )                   >mark %setGivenType;
   optional = ( alnum+ | '-' );
-  region = 'r:' optional                                             >mark %setRegion;
-  mirror = optional                                                  >mark %setMirror;
+  region = optional                                                  >mark %setRegion;
+  mirror = [^ ]+                                                     >mark %setMirror;
   country = optional ":" optional                                    >mark %setCountry;
   asn = 'ASN:' optional                                              >mark %setASN;
   ip = [0-9\.]+                                                      >mark %setIP;
-  net = 'P:' ip                                                      >mark %setNet; 
-  redir_size = 'size:' digit+                                        >mark %setRedirSize;
-  redir_bytes = 'bytes:' digit+ '-'?                                 >mark %setRedirBytes;
+  net = [0-9\.\/]+                                                   >mark %setNet; 
+  redir_size = ( digit+ | '-' )                                      >mark %setRedirSize;
+  redir_bytes = ( '-' | 'bytes=' [0-9\-]+ )                          >mark %setRedirBytes;
 
-  log_line = ip ws '-' ws '-' ws '[' date ']' ws '"' request_method ws
-             request_path ws request_proto '"' ws 
-             return ws size ws '"' referer '"' ws '"' useragent '"' 
-             ws ws0 'want:' request_type ws 'give:' give ws region ws
-             mirror ws ws0 country ws asn ws net ws ws0 redir_size ws
+  log_line = ip ws '-' ws '-' ws '[' date ']' ws 
+             '"' request_method ws request_path ws request_proto '"'
+             ws return ws size ws '"' referer '"' ws 
+             '"' useragent '"' ws ws0 
+             'want:' request_type ws 'give:' give ws
+             'r:' region ws mirror ws ws0 country ws asn ws 
+             'P:' net ws ws0 
+             'size:' redir_size ws
              redir_bytes eol @LogLineFinished;
 
   main := log_line;
@@ -82,6 +84,7 @@ module Mirrorbrain
 
     def initialize
       @result = OpenStruct.new
+      @result.parsed = false
 
       %% write data;
     end
@@ -98,5 +101,7 @@ end
 
 tokenizer = Mirrorbrain::Tokenizer.new
 while gets do
-  puts tokenizer.run($_)
+  r = tokenizer.run($_)
+  next unless r.given_type == 'redirect'
+  puts [r.mirror, r.redir_size].join(',')
 end
