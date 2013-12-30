@@ -494,9 +494,19 @@ when 19 then
   end
 end
 
+CONG = /\/congress\/2013\//
+
 tokenizer = Mirrorbrain::Tokenizer.new
+sums = Hash.new { |h,k| h[k] = 0 }
 while gets do
   r = tokenizer.run($_)
+  next unless r.request_method == 'GET'
   next unless r.given_type == 'redirect'
-  puts [r.mirror, r.redir_size].join(',')
+  next unless CONG.match r.request_path
+  #puts [r.mirror, r.redir_size].join(',')
+  sums[r.mirror] += r.redir_size.to_i
 end
+
+sums.each { |m,s| 
+  printf "%s = %d mb\n", m, s/1024/1024
+}
